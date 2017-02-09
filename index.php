@@ -49,12 +49,26 @@
 			function actionHandler(e) {
 				if (settings.loading) return;
 
-				var post = {}, $log = $('#log');
+				var post = {}, $out = $('tbody');
 				$.each(e.data, function(key, val) { post[key] = val; });
 				try { console.log(post) } catch(err) {};
 
-				if (post.action == 'units') {
-					var $out = $('tbody'); $out.empty();
+				if (post.action == 'delete') {
+					var $this = $out.find('tr[data-id="' + post.id + '"]');
+					if (!confirm('Delete «' + $this.find('td').eq(3).text() + '»?')) return;
+
+					$.ajax({
+						data    : post,
+						success : function(data) {
+							if (data.ok) {
+								$this.remove();
+							} else {
+								alert(data.err);
+							}
+						}
+					});
+				} else if (post.action == 'units') {
+					$out.empty();
 
 					$.ajax({
 						data    : post,

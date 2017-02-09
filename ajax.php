@@ -13,8 +13,8 @@
 	$post = array_map($func, $_POST);
 
 	# возможные команды
-	$actions = ['units'];
-	if (!isset($post['action']) or !in_array($post['action'], $actions)) goto foo;
+	$actions = ['delete', 'units'];
+	if (!isset($post['action']) or !in_array($post['action'], $actions)) goto foo; # https://xkcd.com/292/
 
 	require_once 'db.php';
 	require_once 'simpleMySQLi.class.php';
@@ -22,7 +22,25 @@
 	# создание объекта для работы с БД
 	$sql = new simpleMySQLi($db, pathinfo(__FILE__, PATHINFO_DIRNAME));
 
-	if ($post['action'] == 'units') {
+	if ($post['action'] == 'delete') {
+		# проверка на наличие и валидность $_POST['id']
+		if (!isset($post['id']) or ($post['id'] = (int)$post['id']) <= 0) goto foo;
+
+		# удаление из apodUnits
+		$sql->str = 'delete from apodUnits where id=' . $post['id'];
+		$sql->execute();
+
+		if (!$sql->rows) {
+			$ret['err'] = 'ошибка удаления записи либо запись уже удалена';
+			goto foo;
+		}
+
+		# удаление из apodComments
+		$sql->str = 'delete from apodComments where uid=' . $post['id'];
+		$sql->execute();
+
+		$ret['ok'] = true;
+	} else if ($post['action'] == 'units') {
 		# вывод записей из БД
 		$sql->str   = [];
 		$sql->str[] = 'select u.*, count(c.id) as comments from apodUnits u';
