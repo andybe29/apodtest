@@ -45,10 +45,11 @@ CREATE TABLE `apodUnits` (
   `description` varchar(1024) DEFAULT NULL,
   `url` varchar(1024) DEFAULT NULL,
   `pubDate` datetime DEFAULT NULL,
+  `uploaded` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `link` (`link`),
   KEY `pubDate` (`pubDate`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=121 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -60,4 +61,4 @@ CREATE TABLE `apodUnits` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-02-09 18:16:12
+-- Dump completed on 2017-02-09 18:42:46

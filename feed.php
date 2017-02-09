@@ -28,6 +28,7 @@
 		$data['description'] = $sql->varchar($node->description);
 		$data['url']         = $sql->varchar($attr['@attributes']['url']);
 		$data['pubDate']     = $sql->varchar(date('Y-m-d H:i:s', strtotime($node->pubDate)));
+		$data['uploaded']    = $sql->varchar($sql->now());
 
 		# проверка записи на существование
 		# replace не подходит, ибо будет изменяться значение apodUnits.id
