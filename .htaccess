@@ -1,1 +1,4 @@
-DirectoryIndex index.php
+RewriteEngine on
+RewriteBase /apod
+RewriteRule ^/?$            index.php [NC,L]
+RewriteRule ^([a-z0-9-]+)?$ unit.php?uri=$1 [NC,L]

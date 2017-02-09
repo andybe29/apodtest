@@ -10,11 +10,17 @@
 	$func = function($val) {
 		return (is_scalar($val)) ? trim(strip_tags($val)) : $val;
 	};
-	$post = array_map($func, $_POST);
+	$post = array_map(function($val) { return trim(strip_tags($val)); }, $_POST);
 
 	# возможные команды
-	$actions = ['delete', 'units'];
+	$actions = ['comments', 'delete', 'post', 'units'];
 	if (!isset($post['action']) or !in_array($post['action'], $actions)) goto foo; # https://xkcd.com/292/
+
+	if ($post['action'] != 'units') {
+		# во всех действиях, окромя вывода списка записей, требуется наличие id записи
+		# проверка на наличие и валидность $_POST['id']
+		if (!isset($post['id']) or ($post['id'] = (int)$post['id']) <= 0) goto foo;
+	}
 
 	require_once 'db.php';
 	require_once 'simpleMySQLi.class.php';
@@ -22,9 +28,28 @@
 	# создание объекта для работы с БД
 	$sql = new simpleMySQLi($db, pathinfo(__FILE__, PATHINFO_DIRNAME));
 
-	if ($post['action'] == 'delete') {
-		# проверка на наличие и валидность $_POST['id']
-		if (!isset($post['id']) or ($post['id'] = (int)$post['id']) <= 0) goto foo;
+	if ($post['action'] == 'comments') {
+		# вывод комментариев к записи
+		$sql->str = 'select dtime, data from apodComments where uid=' . $post['id'] . ' order by id desc';
+		$sql->execute();
+
+		$u = $sql->execute() ? $sql->all() : false;
+		$sql->free();
+
+		if ($u === false) goto foo; # ошибка выполнения запроса
+
+		# массив для передачи данных во фронт-энд
+		$ret['comments'] = [];
+
+		# обработка выбранных данных
+		foreach ($u as $r) {
+			$r['dtime'] = strtotime($r['dtime']);
+			$ret['comments'][] = $r;
+		}
+
+		$ret['ok'] = true;
+	} else if ($post['action'] == 'delete') {
+		# удаление записи
 
 		# удаление из apodUnits
 		$sql->str = 'delete from apodUnits where id=' . $post['id'];
@@ -40,6 +65,21 @@
 		$sql->execute();
 
 		$ret['ok'] = true;
+	} else if ($post['action'] == 'post') {
+		# постинг комментария к записи
+		# проверка наличия непустого коммента
+		if (!isset($post['data']) or !mb_strlen($post['data'])) goto foo;
+
+		# запись в apodComments
+		# подготовка данных
+		$data = [];
+		$data['uid']   = $post['id'];
+		$data['dtime'] = $sql->varchar($sql->now());
+		$data['data']  = $sql->varchar($post['data']);
+
+		if (false === ($ret['ok'] = $sql->insert('apodComments', $data) ? true : false)) {
+			$ret['err'] = 'ошибка добавления комментария';
+		}
 	} else if ($post['action'] == 'units') {
 		# вывод записей из БД
 		$sql->str   = [];
@@ -60,7 +100,6 @@
 			$data['id']       = (int)$r['id'];
 			$data['title']    = $r['title'];
 			$data['link']     = $r['link'];
-			$data['uri']      = array_pop(explode('/', $r['link'])); # smart URI
 			$data['pubDate']  = strtotime($r['pubDate']);
 			$data['uploaded'] = strtotime($r['uploaded']);
 			$data['comments'] = (int)$r['comments'];
