@@ -13,20 +13,29 @@
 	$post = array_map(function($val) { return trim(strip_tags($val)); }, $_POST);
 
 	# возможные команды
-	$actions = ['comments', 'delete', 'post', 'units'];
+	$actions = ['comments', 'delete', 'post', 'save', 'units'];
 	if (!isset($post['action']) or !in_array($post['action'], $actions)) goto foo; # https://xkcd.com/292/
+
+	# создание объекта для работы с БД
+	require_once 'db.php';
+	require_once 'simpleMySQLi.class.php';
+	$sql = new simpleMySQLi($db, pathinfo(__FILE__, PATHINFO_DIRNAME));
 
 	if ($post['action'] != 'units') {
 		# во всех действиях, окромя вывода списка записей, требуется наличие id записи
 		# проверка на наличие и валидность $_POST['id']
 		if (!isset($post['id']) or ($post['id'] = (int)$post['id']) <= 0) goto foo;
+
+		# проверка существования записи
+		$sql->str = 'select * from apodUnits where id=' . $post['id'];
+		$sql->execute();
+		$sql->free();
+
+		if (!$sql->rows) {
+			$ret['err'] = 'запись не найдена';
+			goto foo;
+		}
 	}
-
-	require_once 'db.php';
-	require_once 'simpleMySQLi.class.php';
-
-	# создание объекта для работы с БД
-	$sql = new simpleMySQLi($db, pathinfo(__FILE__, PATHINFO_DIRNAME));
 
 	if ($post['action'] == 'comments') {
 		# вывод комментариев к записи
@@ -79,6 +88,26 @@
 
 		if (false === ($ret['ok'] = $sql->insert('apodComments', $data) ? true : false)) {
 			$ret['err'] = 'ошибка добавления комментария';
+		}
+	} else if ($post['action'] == 'save') {
+		# сохранение заголовка и описания записи
+		# проверка на наличие сохраняемых данных
+		$do = true;
+		foreach (['description', 'title'] as $key) {
+			$do = isset($post[$key]) ? $do : false;
+		}
+		if (!$do or !$post['title']) goto foo;
+
+		# обновление в apodUnits
+		# подготовка данных
+		$data = [];
+		$data['title']       = $sql->varchar($post['title']);
+		$data['description'] = $post['description'] ? $sql->varchar($post['description']) : 'null';
+
+		if (false === $sql->update('apodUnits', $data, ['id=' . $post['id']])) {
+			$ret['err'] = 'ошибка записи';
+		} else {
+			$ret['ok'] = true;
 		}
 	} else if ($post['action'] == 'units') {
 		# вывод записей из БД
