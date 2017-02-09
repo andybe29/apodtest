@@ -10,8 +10,9 @@
 	<body>
 		<div class="container" style="width: 128rem">
 			<div class="columns">
-				<div class="column col-12">
+				<div class="column col-2">
 					<h4 class="text-bold">apod test</h4>
+					<p><a href="https://github.com/andybe29/apodtest">GitHub</a></p>
 				</div>
 			</div>
 			<table class="table table-striped table-hover">
